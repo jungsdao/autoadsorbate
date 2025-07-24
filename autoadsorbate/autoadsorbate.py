@@ -260,13 +260,13 @@ class Surface:
         site_atoms.info.pop("adsorbate_info", None)
 
         # Resolve index
-        if isinstance(index, float):
+        return_site_from_df = True
+        if isinstance(index, (float)):
             if not (0.0 <= index <= 1.0):
                 raise ValueError("Float index must be between 0 and 1.")
             position = int(index * len(self.site_df))
             position = min(position, len(self.site_df) - 1)  # clamp to valid range
             index = self.site_df.index[position]
-            return_site_from_df = True
 
         elif index not in self.site_df.index:
             raise KeyError(f"Index {index} not found in site_df index.")
