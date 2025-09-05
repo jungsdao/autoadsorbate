@@ -1505,6 +1505,11 @@ def attach_fragment(
 
     atoms += fragment_copy
 
+    if 'smiles' in fragment.info.keys():
+        if 'fragment_smiles' not in atoms.info.keys():
+            atoms.info['fragment_smiles'] = []
+        atoms.info['fragment_smiles'] += [fragment.info['smiles']]
+
     return atoms
 
 
