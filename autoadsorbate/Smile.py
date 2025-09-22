@@ -907,3 +907,66 @@ def remove_canonical_duplicates(smile_list: List[str]) -> List[str]:
             c_smiles.append(c_smile)
 
     return unique_list
+
+def kabsch_align(ref_coords, target_coords):
+    """
+    Compute rotation matrix that aligns target_coords to ref_coords using Kabsch algorithm.
+    Both inputs are (N, 3) numpy arrays.
+    Returns: 3x3 rotation matrix
+    """
+    # Compute covariance matrix
+    H = target_coords.T @ ref_coords
+    U, S, Vt = np.linalg.svd(H)
+    R = Vt.T @ U.T
+
+    # Correct improper rotation (reflection)
+    if np.linalg.det(R) < 0:
+        Vt[-1, :] *= -1
+        R = Vt.T @ U.T
+
+    return R
+
+def align_atoms_list(atoms_list):
+    """
+    Align all Atoms in atoms_list to the first one by minimizing RMSD.
+    Rotates each Atoms object in place.
+    """
+    ref_atoms = atoms_list[0]
+    ref_coords = ref_atoms.get_positions() - np.zeros(3)  # center at origin if needed
+
+    for atoms in atoms_list[1:]:
+        target_coords = atoms.get_positions() - np.zeros(3)
+        R = kabsch_align(ref_coords, target_coords)
+        rotated_coords = target_coords @ R.T
+        atoms.set_positions(rotated_coords)
+
+
+def rmsd(atoms1: Atoms, atoms2: Atoms) -> float:
+    """
+    Compute RMSD between two ASE Atoms objects.
+    Assumes same number of atoms and same ordering.
+    """
+    diff = atoms1.get_positions() - atoms2.get_positions()
+    return np.sqrt((diff ** 2).sum() / len(atoms1))
+
+def remove_duplicate_atoms(atoms_list, threshold: float = 1e-3):
+    """
+    Remove duplicates from a list of ASE Atoms objects based on RMSD.
+    
+    Args:
+        atoms_list: list of ASE Atoms objects (aligned)
+        threshold: RMSD threshold below which molecules are considered duplicates
+    
+    Returns:
+        List of unique Atoms objects
+    """
+    unique_atoms = []
+    for candidate in atoms_list:
+        is_duplicate = False
+        for u in unique_atoms:
+            if rmsd(candidate, u) < threshold:
+                is_duplicate = True
+                break
+        if not is_duplicate:
+            unique_atoms.append(candidate)
+    return unique_atoms
