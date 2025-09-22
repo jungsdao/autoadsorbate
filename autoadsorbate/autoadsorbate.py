@@ -148,10 +148,9 @@ class Fragment:
         
     def remove_duplicate_conformers(self):
         print(f'Removing duplicate conformers, {len(self.conformers) = }')
-        conformers = align_atoms_list(self.conformers)
+        align_atoms_list(self.conformers)
+        conformers = remove_duplicate_atoms(self.conformers, threshold = 1e-1)
         print(f'{len(conformers) = }')
-
-        conformers = remove_duplicate_atoms(conformers, threshold = 1e-3)
         return conformers
         
     def copy(self) -> "Fragment":
