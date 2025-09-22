@@ -61,6 +61,7 @@ class Fragment:
         to_initialize: int = 10,
         random_seed: int = 2104,
         sort_conformers: bool = True,
+        prune_rms_thresh: float = .5
     ):
         """
         Initialize attributes.
@@ -70,13 +71,14 @@ class Fragment:
             to_initialize (int, optional): The number of conformers to initialize. Defaults to 10.
             random_seed (int, optional): The random seed for conformer generation. Defaults to 2104.
             sort_conformers (bool, optional): Decides if the initial orientation of the fragment conformations is diverse.
+            prune_rms_thresh (float, optional): RMSD threshold for pruning duplicates. Defaults to 0.5 Å.
         """
         self.smile = smile
         self.to_initialize = to_initialize
         self.randomSeed = random_seed
 
         self.conformers = conformers_from_smile(
-            smile, to_initialize, random_seed=random_seed
+            smile, to_initialize, random_seed=random_seed, prune_rms_thresh=prune_rms_thresh
         )
         self.conformers_aligned = [False for _ in self.conformers]
 

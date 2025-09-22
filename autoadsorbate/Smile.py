@@ -15,35 +15,72 @@ from rdkit.Chem.rdForceFieldHelpers import (
 
 from .utils import rotation_matrix_from_vectors
 
+from typing import List
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from ase import Atoms
+import numpy as np
 
 def conformers_from_smile(
-    smiles: str, conformer_count: int = 10, random_seed: int = 0xF00D
+    smiles: str,
+    to_initialize: int = 10,
+    random_seed: int = 0xF00D,
+    prune_rms_thresh: float = 0.8,
+    optimize: bool = True,
+    sort_by_linearity: bool = True,
 ) -> List[Atoms]:
     """
-    Generates conformers from a SMILES string.
+    Generates unique conformers from a SMILES string as ASE Atoms objects,
+    optionally sorted by linearity (max distance from atom 0).
 
     Args:
         smiles (str): The SMILES string of the molecule.
-        conformer_count (int, optional): The number of conformers to generate. Defaults to 10.
-        random_seed (int, optional): The random seed for conformer generation. Defaults to 0xf00d.
+        conformer_count (int, optional): Max number of conformers to generate. Defaults to 10.
+        random_seed (int, optional): Random seed for reproducibility. Defaults to 0xf00d.
+        prune_rms_thresh (float, optional): RMSD threshold (Å) for pruning duplicates. Defaults to 0.8.
+        optimize (bool, optional): Optimize conformers with UFF. Defaults to True.
+        sort_by_linearity (bool, optional): Sort by max distance from atom 0. Defaults to True.
 
     Returns:
         List[Atoms]: A list of ASE Atoms objects representing the conformers.
     """
-    naked_mol = Chem.MolFromSmiles(smiles)
-    mol = Chem.AddHs(naked_mol)
+    mol = Chem.AddHs(Chem.MolFromSmiles(smiles))
 
-    rdDistGeom.EmbedMultipleConfs(
-        mol, conformer_count, randomSeed=random_seed
-    )  # Generate conformer_count conformers
+    params = AllChem.ETKDGv3()
+    params.randomSeed = random_seed
+    params.pruneRmsThresh = prune_rms_thresh
+    params.numThreads = 0
+    params.useRandomCoords = True
+
+    conf_ids = list(AllChem.EmbedMultipleConfs(mol, numConfs=to_initialize, params=params))
+
+    if optimize and conf_ids:
+        AllChem.UFFOptimizeMoleculeConfs(mol)
+
+    symbols = [atom.GetSymbol() for atom in mol.GetAtoms()]
+
+    # --- Sort conformers by linearity (max distance from atom 0) ---
+    if sort_by_linearity:
+        conf_ids = sorted(
+            conf_ids,
+            key=lambda cid: np.max(
+                np.linalg.norm(
+                    mol.GetConformer(cid).GetPositions() - mol.GetConformer(cid).GetAtomPosition(0),
+                    axis=1,
+                )
+            ),
+            reverse=True,  # largest distance (most linear) first
+        )
 
     conformer_trj = []
-    for conf_id in range(conformer_count):
-        conformer = mol.GetConformer(conf_id)
-        positions = conformer.GetPositions()
-        symbols = [atom.GetSymbol() for atom in mol.GetAtoms()]
+    for conf_id in conf_ids:
+        conf = mol.GetConformer(conf_id)
+        positions = conf.GetPositions()
         atoms = Atoms(symbols, positions=positions)
         conformer_trj.append(atoms)
+
+    print(f'User requested {to_initialize = } conformers.')
+    print(f'After pruning with {prune_rms_thresh}; {len(conformer_trj) = } unique conformers are found.')
 
     return conformer_trj
 
