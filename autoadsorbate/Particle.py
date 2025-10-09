@@ -14,11 +14,11 @@ def get_cube_surface_pts(radius=1.0, center=(0, 0, 0), d_min=0.1):
 
     mask = np.any(np.isclose(np.abs(grid), 1.0), axis=1)
     cube_surface_pts = grid[mask]
-    return cube_surface_pts
+    return cube_surface_pts, subdivisions
 
 def grid_round_cube(radius=1.0, center=(0, 0, 0), d_min=0.1):
 
-    cube_surface_pts = get_cube_surface_pts(radius=radius, center=center, d_min=d_min)
+    cube_surface_pts, subdivisions = get_cube_surface_pts(radius=radius, center=center, d_min=d_min)
     
     vert_idx_map = {tuple(v): i for i, v in enumerate(cube_surface_pts)}
 
