@@ -273,7 +273,7 @@ def calculate_sites(inds, particle_atoms, shrinkwrap, threshold=2.7):
 
 def get_shrinkwrap_particle_ads_sites(
     particle_atoms: Atoms,
-    grid_mode: Union[Literal['fibonacci', 'grid'], np.array],
+    grid_mode: Union[Literal['fibonacci', 'grid'], np.ndarray],
     precision: float = 1.,
     touch_sphere_size: float = 3.,
     return_geometry = False,
