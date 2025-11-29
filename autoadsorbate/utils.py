@@ -103,6 +103,30 @@ def get_backbone_bond_change(trj, bond_cutoff=1.6):
     # return a1,a0
     return sum(abs(a))
 
+def get_anchor_drift(trj):
+    if 'adsorbate_info' not in trj[0].info.keys():
+        raise ValueError("No SMILES info found in atoms.info. Don't know how to prase the anchor")
+    info = trj[0].info['adsorbate_info']
+    if 'smiles' not in info.keys():
+        raise ValueError("No SMILES info found in atoms.info. Don't know how to prase the anchor")
+    if 'fragments' not in trj[0].arrays.keys():
+        raise ValueError("No fragments key fround in atoms.arrays. Don't know how to prase the anchor")
+
+    ini = trj[0].copy()
+    ini = ini[ini.arrays['fragments'] == 1]
+    fin = trj[-1].copy()
+    fin = fin[fin.arrays['fragments'] == 1]
+
+    if info['smiles'][:2] == 'Cl':
+        i = 1
+    elif info['smiles'][:2] == 'S1':
+        i = 2
+    else:
+        raise ValueError("Falied to parse atoms.info['smiles'], are surrogate smiles used?")
+
+    drift = np.linalg.norm(ini[:i].get_center_of_mass() - fin[:i].get_center_of_mass())
+    return drift
+
 
 def read_relax_traj(file, pop_site_info=True):
     """
@@ -122,6 +146,7 @@ def read_relax_traj(file, pop_site_info=True):
         atoms = traj[-1]
         atoms.info["bond_change"] = get_backbone_bond_change(traj)
         atoms.info["snap_pos_compare"] = snap_pos_compare(traj[0], traj[-1])
+        atoms.info["anchor_drift"] = get_anchor_drift(traj)
 
     atoms.info["backbone_formula"] = atoms[
         [atom.index for atom in atoms if atom.symbol in ["C", "O"]]
