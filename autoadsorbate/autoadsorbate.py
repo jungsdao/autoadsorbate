@@ -173,14 +173,16 @@ class Surface:
         self.touch_sphere_size = touch_sphere_size
         self.grid_mode = grid_mode
         
-        self.grid, self.faces, self.site_dict = self._shrikwrap(self.atoms)
+        self.grid, self.faces, self.site_dict = self._shrinkwrap(self.atoms)
         self.site_df = pd.DataFrame(self.site_dict)
         self.sort_site_df()
 
         self.sites_atoms = Atoms(['He' for _ in self.site_df.index.values],  [ v for v in self.site_df.coordinates.values])
+        self.sites_atoms.pbc = self.atoms.pbc
+        self.sites_atoms.cell = self.atoms.cell
         self.surf_inds = list(set([i for t in list(self.site_df.topology.values) for i in t]))
 
-    def _shrikwrap(self, atoms):
+    def _shrinkwrap(self, atoms):
         
         if self.mode == 'dummy':
             grid, faces, site_dict = [], [], {}
