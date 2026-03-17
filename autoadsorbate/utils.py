@@ -22,20 +22,31 @@ class MoleculeDesorptionError(Exception):
         self.message = 'Molecule is in gas phase'
         super().__init__(self.message)
 
-def get_connectivity(atoms: ase.Atoms) -> np.ndarray:
+def get_connectivity(atoms: ase.Atoms, mult:float = 1.0) -> np.ndarray:
         """Get the connectivity matrix of an ASE Atoms object.
         Parameters:
             atoms (ase.Atoms): The ASE Atoms object.
+            mult (float): Multiplier for the natural cutoffs.
         Returns:
             np.ndarray: The connectivity matrix.
         """
-        cutoffs = natural_cutoffs(atoms)
+        cutoffs = natural_cutoffs(atoms, mult=mult)
         nl = NeighborList(cutoffs, self_interaction=False, bothways=True)
         nl.update(atoms)
 
         return nl.get_connectivity_matrix(sparse=False)
 
-def evaluate_binding(atoms, mol_indices=None):
+def evaluate_binding(atoms:ase.Atoms, mol_indices:None|list[int] = None, mult:float=1.0) -> dict:
+    """Evaluate the binding of a molecule to a surface by analyzing the connectivity and distances.
+    Parameters:
+        atoms (ase.Atoms): The ASE Atoms object.
+        mol_indices (list): Optional list of indices corresponding to the molecule. If None, it will be determined from the atoms object.
+        mult (float): Multiplier for the natural cutoffs when determining connectivity.
+    Returns:
+        dict: A dictionary containing the binding sites and molecule indices.
+    Raises:
+        MoleculeDesorptionError: If the molecule is found to be desorbed (i.e., no binding sites detected).
+    """
     if mol_indices is not None:
         mol_inds = mol_indices
 
@@ -56,12 +67,12 @@ def evaluate_binding(atoms, mol_indices=None):
     mol_inds = np.array(mol_inds) + len(atoms)*2
     atoms = atoms*(2,2,1)
 
-    C = get_connectivity(atoms)
+    C = get_connectivity(atoms, mult=mult)
     adsorption_idx = []
     for i in mol_inds:
         for j, connected in enumerate(C[i]):
-            if connected and j not in mol_inds and j not in adsorption_idx :
-                adsorption_idx .append(j)
+            if connected and j not in mol_inds and j not in adsorption_idx:
+                adsorption_idx.append(j)
 
     bondlengths = []
     for i in adsorption_idx :
