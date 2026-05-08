@@ -33,8 +33,8 @@ def get_connectivity(atoms: ase.Atoms, mult:float = 1.335) -> np.ndarray:
         Returns:
             np.ndarray: The connectivity matrix.
         """
-        cutoffs = natural_cutoffs(atoms, skin=0, mult=mult)
-        nl = NeighborList(cutoffs, self_interaction=False, bothways=True)
+        cutoffs = natural_cutoffs(atoms, mult=mult)
+        nl = NeighborList(cutoffs, skin=0, self_interaction=False, bothways=True)
         nl.update(atoms)
 
         return nl.get_connectivity_matrix(sparse=False)
