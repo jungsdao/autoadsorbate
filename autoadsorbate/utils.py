@@ -23,21 +23,23 @@ class MoleculeDesorptionError(Exception):
         self.message = 'Molecule is in gas phase'
         super().__init__(self.message)
 
-def get_connectivity(atoms: ase.Atoms, mult:float = 1.0) -> np.ndarray:
+def get_connectivity(atoms: ase.Atoms, mult:float = 1.335) -> np.ndarray:
         """Get the connectivity matrix of an ASE Atoms object.
         Parameters:
             atoms (ase.Atoms): The ASE Atoms object.
             mult (float): Multiplier for the natural cutoffs.
+                        Defaults to 1.335, to be consistent
+                        with bond thresholds in ase gui.
         Returns:
             np.ndarray: The connectivity matrix.
         """
         cutoffs = natural_cutoffs(atoms, mult=mult)
-        nl = NeighborList(cutoffs, self_interaction=False, bothways=True)
+        nl = NeighborList(cutoffs, skin=0, self_interaction=False, bothways=True)
         nl.update(atoms)
 
         return nl.get_connectivity_matrix(sparse=False)
 
-def evaluate_binding(atoms:ase.Atoms, mol_indices:Union[None,list[int]] = None, mult:float=1.0) -> dict:
+def evaluate_binding(atoms:ase.Atoms, mol_indices:Union[None,list[int]] = None, mult:float=1.335) -> dict:
     """Evaluate the binding of a molecule to a surface by analyzing the connectivity and distances.
     Parameters:
         atoms (ase.Atoms): The ASE Atoms object.
